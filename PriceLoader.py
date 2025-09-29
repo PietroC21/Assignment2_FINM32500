@@ -3,7 +3,6 @@ import datetime
 import pandas as pd
 import requests
 import os
-import warnings
 
 # --- Configuration ---
 DATA_DIR = 'sp500_daily_prices_parquet'
@@ -24,9 +23,6 @@ def get_sp500_tickers():
         sp_500 = tables[0]
         tickers = sp_500['Symbol'].tolist()
         return tickers
-
-import os
-import yfinance as yf
 
 def download_and_store():
     tickers = get_sp500_tickers()
