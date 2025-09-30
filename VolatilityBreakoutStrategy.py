@@ -1,0 +1,27 @@
+from AbstractStrategy import Strategy
+import pandas as pd
+
+class VolatilityBreakoutStrategy(Strategy):
+    def __init__(self, prices:pd.DataFrame, tickers:list):
+        super().__init__
+        self.cash = 1_000_000
+        self._symbol = tickers
+        self._window = 20
+        self._prices:pd.DataFrame = prices
+        self.portfolio_value = []
+        self.positions = { t:{'position_value':0,
+                              'shares':0} for t in self._symbol}
+
+    
+    def generate_signals(self):
+        sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
+        for t in self._prices.columns:
+            s = self._prices[t].astype(float)
+            returns = s.pct_change()
+            rolling_std = s.rolling(window=self._window).std()
+
+            up = returns.abs() > rolling_std
+            dn = returns.abs() < rolling_std
+            sigs.loc[up, t] = 1
+            sigs.loc[dn, t] = -1
+        return sigs
