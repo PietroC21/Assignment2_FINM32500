@@ -1,6 +1,6 @@
 from PriceLoader import PriceLoader, get_sp500_tickers
 
-class BenchMarkStrategy:
+class Strategy:
     def __init__(self,x):
         self.pl = PriceLoader()
         self.tickers = self.pl.available_ticker
@@ -43,6 +43,7 @@ class BenchMarkStrategy:
             self.portfolio_value.append(sum)
 
 
-bm = BenchMarkStrategy(5)
-bm.initial_pos()
-bm.run()
+if __name__ == "__main__":
+    bm = Strategy(5)
+    bm.initial_pos()
+    bm.run()
