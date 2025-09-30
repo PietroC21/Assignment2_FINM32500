@@ -1,32 +1,24 @@
-# volatility_breakout_strategy.py
+import pandas as pd
+import numpy as np
 from PriceLoader import PriceLoader
 from BenchmarkStrategy import Strategy
-import pandas as pd
-
 
 class VolatilityBreakoutStrategy(Strategy):
-    def __init__(self, symbol: str, loader: PriceLoader, window: int = 20):
-        super().__init__(symbol)
-        self.loader = loader
-        self.window = window
+    # build Donchian breakout signals (+1 break above high, -1 break below low)
+    def build_signals(self, prices: pd.DataFrame, window: int = 20) -> pd.DataFrame:
+        sigs = pd.DataFrame(0, index=prices.index, columns=prices.columns)
+        for t in prices.columns:
+            s = prices[t].astype(float)
+            hi = s.rolling(window, min_periods=1).max()
+            lo = s.rolling(window, min_periods=1).min()
+            up = s > hi.shift(1)
+            dn = s < lo.shift(1)
+            sigs.loc[up, t] = 1
+            sigs.loc[dn, t] = -1
+        return sigs
 
-    def generate_signals(self, start=None, end=None) -> pd.DataFrame:
-        # get price data
-        prices = self.loader.get_prices(self.symbol, start, end).astype(float)
-
-        # daily returns
-        daily_ret = prices.pct_change()
-
-        # rolling volatility (std of returns)
-        rolling_vol = daily_ret.rolling(self.window).std()
-
-        # buy signal: when return > rolling volatility
-        signal = (daily_ret > rolling_vol).astype(int)
-
-        return pd.DataFrame({
-            "price": prices,
-            "return": daily_ret,
-            f"vol_{self.window}": rolling_vol,
-            "signal": signal,
-            "position": signal
-        })
+    # load prices, build signals, then execute via base Strategy
+    def run(self, window: int = 20):
+        prices = self.load_prices_wide()
+        signals = self.build_signals(prices, window=window)
+        return self.simulate_trades(prices, signals)

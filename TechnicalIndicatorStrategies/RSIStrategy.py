@@ -1,36 +1,32 @@
-# rsi_strategy.py
+import pandas as pd
+import numpy as np
 from PriceLoader import PriceLoader
 from BenchmarkStrategy import Strategy
-import pandas as pd
 
+# compute RSI (EWMA method)
+def rsi(series: pd.Series, window: int = 14) -> pd.Series:
+    d = series.diff()
+    gain = d.clip(lower=0)
+    loss = (-d).clip(lower=0)
+    ag = gain.ewm(alpha=1/window, adjust=False).mean()
+    al = loss.ewm(alpha=1/window, adjust=False).mean()
+    rs = ag / al.replace(0, np.nan)
+    return (100 - 100 / (1 + rs)).fillna(50)
 
 class RSIStrategy(Strategy):
-    def __init__(self, symbol: str, loader: PriceLoader, window: int = 14):
-        super().__init__(symbol)
-        self.loader = loader
-        self.window = window
+    # build RSI threshold signals (+1 cross up from low, -1 cross down from high)
+    def build_signals(self, prices: pd.DataFrame, window: int = 14, low: int = 30, high: int = 70) -> pd.DataFrame:
+        sigs = pd.DataFrame(0, index=prices.index, columns=prices.columns)
+        for t in prices.columns:
+            r = rsi(prices[t].astype(float), window)
+            up = (r > low) & (r.shift(1) <= low)
+            dn = (r < high) & (r.shift(1) >= high)
+            sigs.loc[up, t] = 1
+            sigs.loc[dn, t] = -1
+        return sigs
 
-    def generate_signals(self, start=None, end=None) -> pd.DataFrame:
-        # get price data
-        prices = self.loader.get_prices(self.symbol, start, end).astype(float)
-
-        # compute RSI
-        delta = prices.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-
-        avg_gain = gain.rolling(self.window).mean()
-        avg_loss = loss.rolling(self.window).mean()
-
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
-
-        # buy signal when RSI < 30
-        signal = (rsi < 30).astype(int)
-
-        return pd.DataFrame({
-            "price": prices,
-            "RSI": rsi,
-            "signal": signal,
-            "position": signal
-        })
+    # load prices, build signals, hand off to base for execution
+    def run(self, window: int = 14, low: int = 30, high: int = 70):
+        prices = self.load_prices_wide()
+        signals = self.build_signals(prices, window=window, low=low, high=high)
+        return self.simulate_trades(prices, signals)
