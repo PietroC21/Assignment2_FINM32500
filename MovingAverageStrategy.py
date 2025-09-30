@@ -14,24 +14,28 @@ class MovingAverageStrategy(Strategy):
         self.positions = { t:{'position_value':0,
                               'shares':0} for t in self._symbol}
 
-
-
     def generate_signals(self):
-        sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
-        for t in self._prices.columns:
-            s = self._prices[t].astype(float)
-            #Create the long and short moving average
-            ma_short = s.rolling(self._short_window, min_periods=1).mean()
-            ma_long = s.rolling(self._long_window, min_periods=1 ).mean()
-            #Check  if there is a possibility for a buy or sell signal if conditions met
-            up = (ma_short > ma_long)
-            down = (ma_short < ma_long) 
-            
-            sigs.loc[up,t] = 1
-            sigs.loc[down, t] = -1
+        prices = self._prices.astype(float)
+
+        # Compute short and long moving averages for all tickers at once
+        ma_short = prices.rolling(self._short_window, min_periods=1).mean()
+        ma_long = prices.rolling(self._long_window, min_periods=1).mean()
+
+        # Create signal DataFrame initialized to 0
+        sigs = pd.DataFrame(0, index=prices.index, columns=prices.columns)
+
+        # Vectorized boolean masks
+        up = ma_short > ma_long
+        down = ma_short < ma_long
+
+        # Assign signals using masks
+        sigs[up] = 1
+        sigs[down] = -1
+
         return sigs
 
-       
+
+        
 
 
 

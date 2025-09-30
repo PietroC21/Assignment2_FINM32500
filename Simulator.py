@@ -49,6 +49,7 @@ class Simulator:
                     continue
             
             strategy.portfolio_value.append(float(strategy.cash+position_value))
+
     def run_strats(self):
         names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy']
         for n,s in zip(names,self.strat):

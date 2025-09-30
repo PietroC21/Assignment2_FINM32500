@@ -15,16 +15,16 @@ class MACDStrategy(Strategy):
                               'shares':0} for t in self._symbol}
         
     def generate_signals(self):
-         sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
-         for t in self._prices.columns:
-            s = self._prices[t].astype(float)
-            ema_f = s.ewm(span=self._fast, adjust=False).mean()
-            ema_s = s.ewm(span=self._slow, adjust=False).mean()
-            macd = ema_f - ema_s
-            macd_sig = macd.ewm(span=self._window, adjust=False).mean()
-            up = (macd > macd_sig) 
-            dn = (macd < macd_sig) 
-            sigs.loc[up, t] = 1
-            sigs.loc[dn, t] = -1
-         return sigs
+        sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
+         
+        s = self._prices.astype(float)
+        ema_f = s.ewm(span=self._fast, adjust=False).mean()
+        ema_s = s.ewm(span=self._slow, adjust=False).mean()
+        macd = ema_f - ema_s
+        macd_sig = macd.ewm(span=self._window, adjust=False).mean()
+        up = (macd > macd_sig) 
+        dn = (macd < macd_sig) 
+        sigs[up] = 1
+        sigs[dn] = -1
+        return sigs
              

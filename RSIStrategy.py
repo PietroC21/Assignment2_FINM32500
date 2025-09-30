@@ -27,17 +27,17 @@ class RSIStrategy(Strategy):
 
     def generate_signals(self):
         sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
-        for t in self._prices.columns:
-            #price for stock t
-            s = self._prices[t]
-            #calculate the rsi
-            r = rsi(s.astype(float), self.__windows)
+        
+        #price for stock t
+        s = self._prices.astype(float)
+        #calculate the rsi
+        r = rsi(s.astype(float), self.__windows)
 
-            #generate sell and buy signals
-            up = (r > self.__low) 
-            dn = (r < self.__high)
+        #generate sell and buy signals
+        up = (r > self.__low) 
+        dn = (r < self.__high)
 
-            #put them in singal dataframe
-            sigs.loc[up, t] = 1
-            sigs.loc[dn, t] = -1
+        #put them in singal dataframe
+        sigs[up] = 1
+        sigs[dn] = -1
         return sigs

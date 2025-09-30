@@ -14,14 +14,12 @@ class VolatilityBreakoutStrategy(Strategy):
 
     
     def generate_signals(self):
-        sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
-        for t in self._prices.columns:
-            s = self._prices[t].astype(float)
-            returns = s.pct_change()
-            rolling_std = s.rolling(window=self._window).std()
-
-            up = returns.abs() > rolling_std
-            dn = returns.abs() < rolling_std
-            sigs.loc[up, t] = 1
-            sigs.loc[dn, t] = -1
+        s = self._prices.astype(float)
+        returns = s.pct_change()
+        rolling_std = s.rolling(window=self._window).std()
+        sigs = pd.DataFrame(0, index=s.index, columns=s.columns)
+        up = returns > rolling_std
+        dn = returns < rolling_std
+        sigs[up] = 1
+        sigs[dn] = -1
         return sigs
