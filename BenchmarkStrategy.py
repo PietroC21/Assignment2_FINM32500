@@ -8,6 +8,7 @@ class BenchMarkStrategy:
         self.cash = 1_000_000
         self.portfolio_value = [self.cash]
         self.positions = {}
+
     def initial_pos(self):
         for i in self.tickers:
             try:
