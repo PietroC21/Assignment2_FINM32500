@@ -12,7 +12,6 @@ class VolatilityBreakoutStrategy(Strategy):
         self.positions = { t:{'position_value':0,
                               'shares':0} for t in self._symbol}
 
-    
     def generate_signals(self):
         s = self._prices.astype(float)
         returns = s.pct_change()

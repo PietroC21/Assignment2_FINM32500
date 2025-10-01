@@ -3,6 +3,7 @@ from MACDStrategy import MACDStrategy
 from VolatilityBreakoutStrategy import VolatilityBreakoutStrategy
 from RSIStrategy import RSIStrategy
 from PriceLoader import PriceLoader
+from BenchmarkStrategy import BenchmarkStrategy
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
@@ -18,46 +19,59 @@ class Simulator:
         vol = VolatilityBreakoutStrategy(self.prices, self.tickers)
         rsi = RSIStrategy(self.prices, self.tickers)
         mac = MACDStrategy(self.prices, self.tickers)
-        self.strat = [ma, vol, rsi, mac]
+        bm = BenchmarkStrategy(self.prices,self.tickers)
+        self.strat = [ma,vol,rsi,mac,bm]
     
     def simulate_trade(self, strategy):
         sigs:pd.DataFrame = strategy.generate_signals()
-        for time, s in sigs.iterrows():
-            
-            position_value = 0
-            for tick in self.tickers:
-                #Get new price for given stock at time t
-                price = self.prices.loc[time,tick].astype(float)
-                #update value of portfolio for given stock
-                if strategy.positions[tick]['position_value']>0:
-                    strategy.positions[tick]['position_value'] = (price/strategy.positions[tick]['position_value'] - 1)*100
 
-                #Update positions if there is a buy or sell signal
-                if s[tick]==1:
-                    if strategy.cash > price:
-                        strategy.positions[tick]['position_value'] += price
-                        position_value += strategy.positions[tick]['position_value']
-                        strategy.positions[tick]['shares'] +=1 
-                        strategy.cash -= price
-                elif s[tick]==-1:
-                    if strategy.positions[tick]['shares']>0:
-                        strategy.positions[tick]['position_value'] -=price
-                        position_value += strategy.positions[tick]['position_value']
-                        strategy.positions[tick]['shares'] -=1 
-                        strategy.cash += price
-                else:
-                    continue
+        for time, s in sigs.iterrows():
+            total_position_value = 0
             
-            strategy.portfolio_value.append(float(strategy.cash+position_value))
+            for tick in self.tickers:
+                # Get new price for given stock at time t
+                price = self.prices.loc[time,tick].astype(float)
+                
+                # Update current market value of existing positions
+                if strategy.positions[tick]['shares'] > 0:
+                    strategy.positions[tick]['position_value'] = strategy.positions[tick]['shares'] * price
+                    total_position_value += strategy.positions[tick]['position_value']
+                
+                # Update positions if there is a buy or sell signal
+                if s[tick] == 1:  # Buy signal
+                    if strategy.cash >= price:
+                        shares_to_buy = 1
+                        cost = shares_to_buy * price
+                        strategy.positions[tick]['shares'] += shares_to_buy
+                        strategy.positions[tick]['position_value'] = strategy.positions[tick]['shares'] * price
+                        strategy.cash -= cost
+                        total_position_value += strategy.positions[tick]['position_value']
+                        
+                elif s[tick] == -1:  # Sell signal
+                    if strategy.positions[tick]['shares'] > 0:
+                        shares_to_sell = 1
+                        proceeds = shares_to_sell * price
+                        strategy.positions[tick]['shares'] -= shares_to_sell
+                        strategy.cash += proceeds
+                        if strategy.positions[tick]['shares'] > 0:
+                            strategy.positions[tick]['position_value'] = strategy.positions[tick]['shares'] * price
+                            total_position_value += strategy.positions[tick]['position_value']
+                        else:
+                            strategy.positions[tick]['position_value'] = 0
+            
+            # Calculate total portfolio value (cash + market value of all positions)
+            strategy.portfolio_value.append(float(strategy.cash + total_position_value))
 
     def run_strats(self):
-        names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy']
+        names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy', 'BenchmarkStrategy']
+        #names = ['BenchmarkStrategy']
         for n,s in zip(names,self.strat):
             print(f'Simulating {n} ')
-            self.simulate_trade(s)
+            self.simulate_trade(s)       
     
     def plot_portoflio(self):
-        names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy']
+        names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy', 'BenchmarkStrategy']
+        #names = ['BenchmarkStrategy']
         DIR = 'Plots'
         os.makedirs('Plots', exist_ok=True)
         for n, s in zip(names, self.strat):

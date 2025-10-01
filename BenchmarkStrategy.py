@@ -1,50 +1,72 @@
+from AbstractStrategy import Strategy
 from PriceLoader import PriceLoader
+import pandas as pd
 
-class BenchMarkStrategy:
-    def __init__(self,x):
-        super()
-        self.pl = PriceLoader()
-        self.tickers = self.pl.available_ticker
-        self.x_shares = x
+class BenchmarkStrategy(Strategy):
+    def __init__(self, prices:pd.DataFrame, tickers:list):
+        super().__init__()
+        self._symbol = tickers
+        self._prices:pd.DataFrame = prices
+        self.x_shares = 5
         self.cash = 1_000_000
         self.portfolio_value = [self.cash]
-        self.positions = {}
+        self.positions = {t: {'position_value': 0, 'shares': 0} for t in self._symbol}
+
+    def generate_signals(self):
+        """
+        Benchmark strategy: Buy and hold - buy equal amounts of all stocks at the beginning
+        and hold them throughout the entire period.
+        """
+        prices = self._prices.astype(float)
+        # Create signal DataFrame initialized to 0
+        sigs = pd.DataFrame(0, index=prices.index, columns=prices.columns)
+        
+        # Buy signal only on the first day for all stocks
+        sigs.iloc[0] = 1
+        
+        return sigs
 
     def initial_pos(self):
-        for i in self.tickers:
+        """
+        Initialize positions by buying equal amounts of all available stocks
+        """
+        # Calculate equal allocation per stock
+        available_cash = self.cash
+        num_stocks = len(self._symbol)
+        
+        if num_stocks == 0:
+            return
+            
+        cash_per_stock = available_cash / num_stocks
+        
+        for ticker in self._symbol:
             try:
-                price = self.pl.load_price_data(i)
-                cur_price = price.iloc[0].iloc[0]
-                value = self.x_shares*float(cur_price)
-                if value > self.cash:
-                    self.tickers.remove(i)
+                # Get the first available price for this ticker
+                price_series = self._prices[ticker].dropna()
+                if len(price_series) == 0:
                     continue
-                self.cash -= value
-                list_pos = price.values.tolist()
-                list_pos = [i[0] for i in list_pos]
-                self.positions[i] =  {
-                    'value': cur_price,
-                    'purchase_price': float(cur_price),
-                    'list_price': list_pos}
+                    
+                initial_price = price_series.iloc[0]
+                shares_to_buy = int(cash_per_stock / initial_price)
+                
+                if shares_to_buy > 0:
+                    cost = shares_to_buy * initial_price
+                    self.cash -= cost
+                    self.positions[ticker]['shares'] = shares_to_buy
+                    self.positions[ticker]['position_value'] = cost
+                    
             except Exception as e:
-                self.tickers.remove(i)
-                print(e)
+                print(f'Error initializing position for {ticker}: {e}')
+                continue
 
-    def run(self):
-        sum = 0
-        for i in range(1, 2516):
-            for tick in self.positions.keys():
-                prices = self.positions[tick]['list_price']
-                cur_price = float(prices[i])
-                purchase_price = self.positions[tick]['purchase_price']
-                value = purchase_price*(float(cur_price)/purchase_price - 1)*100
-                self.positions[tick]['value'] = value
-                sum += value
-            sum += self.cash
-            self.portfolio_value.append(sum)
-
+   
 if __name__ == '__main__':
-    x = 5
-    bm = BenchMarkStrategy(x)
+    pl = PriceLoader()
+    tickers = pl.available_ticker
+    stocks ={t:pl.load_price_data(t) for t in tickers}
+    prices = pd.concat(stocks, axis=1)
+    bm = BenchmarkStrategy(prices,tickers)
     bm.initial_pos()
     bm.run()
+    print(f"Initial cash: {bm.cash}")
+    print(f"Positions: {bm.positions}")
