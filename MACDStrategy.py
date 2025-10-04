@@ -9,11 +9,12 @@ class MACDStrategy(Strategy):
         self._window = 9
         self._fast = 12
         self._slow = 26
+        self.name = 'MACDStrategy'
         self._prices:pd.DataFrame = prices
         self.portfolio_value = []
         self.positions = { t:{'position_value':0,
                               'shares':0} for t in self._symbol}
-        
+    
     def generate_signals(self):
         sigs = pd.DataFrame(0, index=self._prices.index, columns=self._prices.columns)
          

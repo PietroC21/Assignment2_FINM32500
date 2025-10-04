@@ -7,6 +7,7 @@ class MovingAverageStrategy(Strategy):
         self._short_window = 20
         self._symbol = tickers
         self._long_window = 50
+        self.name = 'MovingAverageStrategy'
         self._prices:pd.DataFrame = prices
         self.positions = { t:{'position_value':0,
                               'shares':0} for t in self._symbol}

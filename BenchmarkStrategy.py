@@ -7,9 +7,10 @@ class BenchmarkStrategy(Strategy):
         super().__init__()
         self._symbol = tickers
         self._prices:pd.DataFrame = prices
-        self.x_shares = 5
+        self.x_shares = 100
         self.cash = 1_000_000
-        self.portfolio_value = [self.cash]
+        self.name = 'BenchmarkStrategy'
+        self.portfolio_value = []
         self.positions = {t: {'position_value': 0, 'shares': 0} for t in self._symbol}
 
     def generate_signals(self):

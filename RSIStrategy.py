@@ -16,6 +16,7 @@ class RSIStrategy(Strategy):
     def __init__(self, prices:pd.DataFrame, tickers:list):
         super().__init__
         self.__low = 30
+        self.name = 'RSIStrategy'
         self.__high = 70
         self.__windows = 10
         self.cash = 1_000_000

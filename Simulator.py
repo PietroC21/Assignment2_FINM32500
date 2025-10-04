@@ -41,6 +41,8 @@ class Simulator:
                 if s[tick] == 1:  # Buy signal
                     if strategy.cash >= price:
                         shares_to_buy = 1
+                        if strategy.name == 'BenchmarkStrategy':
+                            shares_to_buy = strategy.x_shares
                         cost = shares_to_buy * price
                         strategy.positions[tick]['shares'] += shares_to_buy
                         strategy.positions[tick]['position_value'] = strategy.positions[tick]['shares'] * price
@@ -57,21 +59,19 @@ class Simulator:
                             strategy.positions[tick]['position_value'] = strategy.positions[tick]['shares'] * price
                             total_position_value += strategy.positions[tick]['position_value']
                         else:
-                            strategy.positions[tick]['position_value'] = 0
+                             continue
             
             # Calculate total portfolio value (cash + market value of all positions)
             strategy.portfolio_value.append(float(strategy.cash + total_position_value))
 
     def run_strats(self):
         names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy', 'BenchmarkStrategy']
-        #names = ['BenchmarkStrategy']
         for n,s in zip(names,self.strat):
             print(f'Simulating {n} ')
             self.simulate_trade(s)       
     
     def plot_portoflio(self):
         names = ['MovingAverageStrategy', 'VolatilityBreakoutStrategy', 'RSIStrategy', 'MACDStrategy', 'BenchmarkStrategy']
-        #names = ['BenchmarkStrategy']
         DIR = 'Plots'
         os.makedirs('Plots', exist_ok=True)
         for n, s in zip(names, self.strat):

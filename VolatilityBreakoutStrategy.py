@@ -7,6 +7,7 @@ class VolatilityBreakoutStrategy(Strategy):
         self.cash = 1_000_000
         self._symbol = tickers
         self._window = 20
+        self.name = 'RSIStrategy'
         self._prices:pd.DataFrame = prices
         self.portfolio_value = []
         self.positions = { t:{'position_value':0,
